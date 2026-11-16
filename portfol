@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mihir Gadhvi — 220 kV Power Systems & SCADA Automation Digital-Twin Portfolio</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Space Grotesk', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #03070e;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .font-display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .font-mono-scada {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* SCADA Control Room Glass Panels */
+    .scada-panel {
+      background: rgba(5, 12, 24, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(6, 182, 212, 0.24);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(34, 211, 238, 0.10);
+    }
+    .scada-panel-emerald {
+      background: rgba(4, 15, 16, 0.76);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow: 0 20px 50px rgba(16, 185, 129, 0.12), inset 0 1px 0 rgba(52, 211, 153, 0.12);
+    }
+    .scada-panel-amber {
+      background: rgba(16, 12, 6, 0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 20px 50px rgba(245, 158, 11, 0.12);
+    }
+    /* High-Voltage Busbar Spine */
+    .busbar-spine {
+      background: linear-gradient(180deg,
+        #06b6d4 0%,
+        #10b981 35%,
+        #f59e0b 70%,
+        #38bdf8 100%
+      );
+      box-shadow: 0 0 18px rgba(6, 182, 212, 0.55);
+    }
+    body.full-grid-mode main {
+      opacity: 0.04;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    main {
+      transition: opacity 0.35s ease;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #03070e;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0e7490;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #22d3ee;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen selection:bg-cyan-400 selection:text-slate-950">
+
+  <!-- ===================================================================
+       FIXED 220 kV POWER SYSTEM & SCADA DIGITAL-TWIN CANVAS (SCROLL-DRIVEN)
+       =================================================================== -->
+  <canvas id="power-grid-canvas" class="fixed inset-0 w-full h-full z-0 pointer-events-auto"></canvas>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-box" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ===================================================================
+       TOP STICKY 220 kV SCADA TELEMETRY CONTROL BAR
+       =================================================================== -->
+  <header class="sticky top-0 z-40 scada-panel border-b border-cyan-500/30 px-4 sm:px-6 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand / 220 kV Master Bus Identity -->
+      <a href="#bay-bus0" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-emerald-400 to-amber-400 p-0.5 shadow-lg shadow-cyan-500/25">
+          <div class="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center font-mono-scada font-bold text-xs text-cyan-300 group-hover:bg-transparent group-hover:text-slate-950 transition-all">
+            220kV
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-display font-bold text-base sm:text-lg tracking-wider text-white">MIHIR GADHVI</span>
+            <span id="scada-active-bay" class="px-2.5 py-0.5 rounded-md text-[10px] font-mono-scada font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+              ● GRID ONLINE • 50.00 Hz
+            </span>
+          </div>
+          <p class="text-[11px] font-mono-scada text-slate-400 hidden sm:block">
+            220 kV Power Systems, Protection &amp; PLC/Microcontroller Automation Digital Twin
+          </p>
+        </div>
+      </a>
+
+      <!-- Feeder Bay Jump Buttons -->
+      <nav class="hidden xl:flex items-center gap-1 bg-slate-950/90 border border-slate-800 rounded-xl p-1 text-xs font-mono-scada">
+        <a href="#bay-bus0" class="feeder-nav-link px-2.5 py-1.5 rounded-lg bg-cyan-400 text-slate-950 font-bold transition-all" data-bay="0">BUS 00: Core</a>
+        <a href="#bay-edu" class="feeder-nav-link px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all" data-bay="1">FDR 01: GTU Edu</a>
+        <a href="#bay-getco" class="feeder-nav-link px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all" data-bay="2">FDR 02: GETCO 220kV</a>
+        <a href="#bay-automation" class="feeder-nav-link px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all" data-bay="3">FDR 03: PLC/MCU Lab</a>
+        <a href="#bay-skills" class="feeder-nav-link px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all" data-bay="4">FDR 04: Protection</a>
+        <a href="#bay-dispatch" class="feeder-nav-link px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all" data-bay="5">FDR 05: Dispatch</a>
+      </nav>
+
+      <!-- Interactive SCADA Controls -->
+      <div class="flex items-center gap-2">
+        <button type="button" id="full-grid-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono-scada font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 transition-all" title="Hide Cards to Inspect Full-Screen Animated Power Grid">
+          <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+          <span id="full-grid-label">Full Grid View</span>
+        </button>
+
+        <button type="button" id="fault-test-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono-scada font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition-all" title="Inject a Simulated 3-Phase Fault to Watch Protection Relay Trip & Auto-Reclose">
+          <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-400"></i>
+          <span id="fault-btn-label" class="hidden sm:inline">Inject Fault Test</span>
+        </button>
+
+        <button type="button" id="open-resume-modal-btn" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-mono-scada font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 shadow-md transition-all">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+          <span>Resume Sheet</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Live Load Flow Progress Bar -->
+    <div class="w-full h-0.5 bg-slate-900 mt-2 overflow-hidden rounded-full">
+      <div id="load-flow-bar" class="h-full bg-gradient-to-r from-cyan-400 via-emerald-400 to-amber-400 w-0 transition-all duration-150"></div>
+    </div>
+  </header>
+
+  <!-- ===================================================================
+       TOP UNOBSTRUCTED 220 kV SUBSTATION & AUTOMATION DIGITAL-TWIN STAGE
+       =================================================================== -->
+  <section id="open-grid-stage" class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 pointer-events-none">
+    <div class="h-[430px] sm:h-[500px] w-full flex flex-col justify-between rounded-3xl border border-cyan-500/30 bg-slate-950/15 p-4 sm:p-6">
+      
+      <!-- Top Telemetry Overlay Badges -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="pointer-events-auto inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-cyan-400/40 text-xs font-mono-scada text-cyan-300 shadow-lg">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>LIVE 220 kV SCADA SLD • CLICK ANY SUBSTATION FEEDER NODE TO INSPECT</span>
+        </div>
+
+        <div class="pointer-events-auto flex flex-wrap items-center gap-2 text-[11px] font-mono-scada">
+          <span id="stage-kv-readout" class="px-3 py-1 rounded-xl bg-slate-950/90 border border-emerald-500/30 text-emerald-300">
+            V_bus: 220.0 kV | f: 50.00 Hz | PF: 0.98 Lag
+          </span>
+        </div>
+      </div>
+
+      <!-- Bottom Quick-Dispatch Bar inside the Unobstructed Stage -->
+      <div class="pointer-events-auto flex flex-wrap items-center justify-between gap-2 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-2xl px-4 py-2.5">
+        <span class="text-xs font-mono-scada text-slate-300">
+          Scroll down: Interactive Control Panels stay on the <strong class="text-cyan-300">left</strong> while the <strong class="text-emerald-300">live 220 kV Power Grid docks on the right</strong> ↓
+        </span>
+        <div class="flex flex-wrap gap-1.5 text-[11px] font-mono-scada">
+          <a href="#bay-bus0" class="px-2.5 py-1 rounded-lg bg-cyan-400 text-slate-950 font-bold">⚡ Master Bus</a>
+          <a href="#bay-edu" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-sky-300 border border-sky-500/30">FDR 1: Edu</a>
+          <a href="#bay-getco" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30">FDR 2: GETCO</a>
+          <a href="#bay-automation" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/30">FDR 3: PLC/MCU</a>
+          <a href="#bay-skills" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/30">FDR 4: Skills</a>
+          <a href="#bay-dispatch" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-indigo-300 border border-indigo-500/30">FDR 5: Comms</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       LEFT-DOCKED INTERACTIVE SCADA & PLC BAYS (RIGHT SIDE OPEN FOR GRID)
+       =================================================================== -->
+  <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 space-y-20 md:space-y-24 pointer-events-none">
+
+    <!-- Continuous Vertical 220 kV Busbar Trunk Line -->
+    <div class="hidden md:block absolute left-6 lg:left-8 top-8 bottom-24 w-1.5 busbar-spine rounded-full opacity-75 pointer-events-none"></div>
+
+    <!-- ===============================================================
+         BAY 00: 220 kV MASTER BUSBAR — MIHIR GADHVI CORE & EXCITER
+         =============================================================== -->
+    <section id="bay-bus0" data-bay-title="● BUS 00: 220 kV MASTER CORE" class="scada-bay relative md:pl-14 lg:pl-16 lg:w-[57%] pointer-events-auto">
+      <div class="hidden md:flex absolute left-3.5 lg:left-5 top-10 w-7 h-7 rounded-lg bg-cyan-400 text-slate-950 items-center justify-center font-mono-scada font-bold text-xs shadow-lg shadow-cyan-500/50">
+        B0
+      </div>
+
+      <div class="scada-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-500/25 pb-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-cyan-500/15 border border-cyan-400/40 text-xs font-mono-scada text-cyan-300">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span>SUBSTATION MASTER BUS 00 • 220 kV SYNCHRONOUS GENERATOR</span>
+          </div>
+          <span class="text-xs font-mono-scada text-emerald-400">BREAKER 52-M: CLOSED</span>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <p class="text-xs font-mono-scada uppercase tracking-widest text-amber-400">Power Systems, Protection &amp; Automation Engineer</p>
+            <h1 class="font-display text-4xl sm:text-5xl font-bold tracking-tight text-white mt-1">
+              MIHIR <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-emerald-300 to-amber-300">GADHVI</span>
+            </h1>
+            <p class="text-xs sm:text-sm font-mono-scada text-slate-300 mt-1.5">
+              B.E. Electrical Engineering • Government Engineering College, Rajkot (GTU) • CGPA: 7.78
+            </p>
+          </div>
+
+          <!-- Verbatim Objective from 230200109021_resume.pdf -->
+          <div class="p-4 rounded-2xl bg-slate-950/85 border-l-4 border-cyan-400 text-xs sm:text-sm text-slate-200 leading-relaxed">
+            "Final-year Electrical Engineering student with hands-on substation testing experience and a strong academic record, seeking a placement opportunity to apply my knowledge of power systems, protection, and automation to real-world engineering challenges."
+          </div>
+
+          <!-- Interactive Busbar Voltage & Frequency Exciter -->
+          <div class="p-4 rounded-2xl bg-slate-950/90 border border-cyan-500/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono-scada uppercase text-cyan-300 font-bold">⚡ Live 3-Phase Busbar Exciter &amp; Oscilloscope Control</span>
+              <span id="bus-voltage-badge" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-xs font-mono-scada font-bold">220.0 kV | 50.0 Hz</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-mono-scada">
+                  <span class="text-slate-300">Bus Voltage Excitation (kV)</span>
+                  <span id="kv-slider-val" class="text-cyan-300 font-bold">220 kV</span>
+                </div>
+                <input id="kv-slider" type="range" min="198" max="242" step="1" value="220" class="w-full accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg" />
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-mono-scada">
+                  <span class="text-slate-300">System Frequency (Hz)</span>
+                  <span id="hz-slider-val" class="text-amber-300 font-bold">50.0 Hz</span>
+                </div>
+                <input id="hz-slider" type="range" min="48.5" max="51.5" step="0.1" value="50.0" class="w-full accent-amber-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          <!-- One-Click Contact Terminals -->
+          <div class="flex flex-wrap items-center gap-2 pt-1">
+            <button type="button" data-copy="+91 93283 39238" data-label="Phone" class="copy-term inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs font-mono-scada text-cyan-300 transition-all">
+              <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+              <span>+91 93283 39238</span>
+              <i data-lucide="copy" class="w-3 h-3 text-slate-500"></i>
+            </button>
+            <button type="button" data-copy="mihirgadhavi77@gmail.com" data-label="Email" class="copy-term inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs font-mono-scada text-amber-300 transition-all">
+              <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+              <span>mihirgadhavi77@gmail.com</span>
+              <i data-lucide="copy" class="w-3 h-3 text-slate-500"></i>
+            </button>
+            <a href="https://www.linkedin.com/in/gecrelect230200109021" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs font-mono-scada text-sky-300 transition-all">
+              <i data-lucide="linkedin" class="w-3.5 h-3.5"></i>
+              <span>LinkedIn</span>
+              <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+            </a>
+            <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-xs font-mono-scada text-slate-400">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Rajkot, Gujarat</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===============================================================
+         FEEDER 01: EDUCATION — GTU STEP-UP TRANSFORMER TAP SELECTOR
+         =============================================================== -->
+    <section id="bay-edu" data-bay-title="● FDR 01: GTU ACADEMIC FEEDER" class="scada-bay relative md:pl-14 lg:pl-16 lg:w-[57%] pointer-events-auto">
+      <div class="hidden md:flex absolute left-3.5 lg:left-5 top-10 w-7 h-7 rounded-lg bg-sky-400 text-slate-950 items-center justify-center font-mono-scada font-bold text-xs shadow-lg shadow-sky-500/50">
+        F1
+      </div>
+
+      <div class="scada-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-mono-scada uppercase tracking-widest text-sky-400">FEEDER BAY 01 // ON-LOAD TAP CHANGER (OLTC)</span>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">Education — B.E. Electrical Engineering</h2>
+          </div>
+          <span class="px-3 py-1 rounded-md text-xs font-mono-scada font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+            2022 – 2026 • GEC Rajkot (GTU)
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono-scada">
+          <div class="p-3.5 rounded-2xl bg-slate-950/85 border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Institute &amp; University</div>
+            <div class="text-xs font-bold text-white mt-1">GEC Rajkot (GTU)</div>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-950/85 border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Academic CGPA</div>
+            <div class="text-base font-bold text-amber-400 mt-0.5">7.78 (up to Sem V)</div>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-950/85 border border-slate-800">
+            <div class="text-[10px] text-slate-400 uppercase">Current Status</div>
+            <div class="text-base font-bold text-emerald-400 mt-0.5">Semester VII</div>
+          </div>
+        </div>
+
+        <!-- Interactive 8-Tap Semester Selector -->
+        <div class="p-4 rounded-2xl bg-slate-950/90 border border-sky-500/30 space-y-3">
+          <div class="flex items-center justify-between text-xs font-mono-scada">
+            <span class="text-sky-300 uppercase font-semibold">Transformer Tap Position (Semesters I – VIII)</span>
+            <span class="text-slate-400">Click tap to inspect</span>
+          </div>
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-1.5" id="oltc-tap-grid"></div>
+          <div id="oltc-tap-readout" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===============================================================
+         FEEDER 02: GETCO 220 kV SUBSTATION TESTING & BREAKER CONTROL
+         =============================================================== -->
+    <section id="bay-getco" data-bay-title="● FDR 02: GETCO 220 kV SWITCHYARD" class="scada-bay relative md:pl-14 lg:pl-16 lg:w-[57%] pointer-events-auto">
+      <div class="hidden md:flex absolute left-3.5 lg:left-5 top-10 w-7 h-7 rounded-lg bg-emerald-400 text-slate-950 items-center justify-center font-mono-scada font-bold text-xs shadow-lg shadow-emerald-500/50">
+        F2
+      </div>
+
+      <div class="scada-panel-emerald rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/25 pb-4">
+          <div>
+            <span class="text-xs font-mono-scada uppercase tracking-widest text-emerald-400">FEEDER BAY 02 // HIGH-VOLTAGE SUBSTATION TESTING</span>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">
+              Internship — GETCO (Testing Department)
+            </h2>
+            <p class="text-xs text-slate-300 font-mono-scada mt-1">
+              Gujarat Energy Transmission Corporation Limited (GETCO) • Industrial Trainee • 15 Days
+            </p>
+          </div>
+          <span class="px-3 py-1 rounded-md text-xs font-mono-scada font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            3 Substations Visited
+          </span>
+        </div>
+
+        <!-- 3 Visited Substations Selector -->
+        <div class="space-y-3">
+          <div class="text-xs font-mono-scada uppercase text-emerald-300 font-semibold">
+            Select Substation Feeder Bay to Inspect Field Operations:
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="substation-bay-btns">
+            <button type="button" data-sub-bay="morbi" class="sub-bay-btn p-3 rounded-xl text-left font-mono-scada transition-all bg-emerald-400 text-slate-950 font-bold shadow-md">
+              <div class="text-[10px] uppercase">BAY 01 • OUTDOOR AIS</div>
+              <div class="text-xs font-bold mt-0.5">220 kV Morbi (AIS)</div>
+            </button>
+            <button type="button" data-sub-bay="siddheshwar" class="sub-bay-btn p-3 rounded-xl text-left font-mono-scada transition-all bg-slate-900 text-slate-200 border border-slate-700 hover:border-emerald-400">
+              <div class="text-[10px] uppercase text-emerald-400">BAY 02 • ENCLOSED SF6</div>
+              <div class="text-xs font-bold mt-0.5">220 kV Siddheshwar (GIS)</div>
+            </button>
+            <button type="button" data-sub-bay="hadala" class="sub-bay-btn p-3 rounded-xl text-left font-mono-scada transition-all bg-slate-900 text-slate-200 border border-slate-700 hover:border-emerald-400">
+              <div class="text-[10px] uppercase text-emerald-400">BAY 03 • PROTECTION</div>
+              <div class="text-xs font-bold mt-0.5">Hadala Substation</div>
+            </button>
+          </div>
+
+          <div id="substation-bay-summary" class="p-3.5 rounded-xl bg-slate-950/90 border border-emerald-500/30 text-xs text-slate-200 leading-relaxed">
+            Visited and studied operations at <strong class="text-emerald-300">220 kV Morbi (AIS)</strong> substation: gained practical exposure to outdoor Air Insulated Switchgear equipment testing, power transformers, CTs/PTs, and maintenance procedures.
+          </div>
+        </div>
+
+        <!-- 6 Equipment Diagnostic Switches -->
+        <div class="space-y-3 pt-1">
+          <div class="flex items-center justify-between text-xs font-mono-scada">
+            <span class="text-amber-300 uppercase font-semibold">Substation Equipment Studied (Click to Energize Test Log)</span>
+            <span class="text-slate-400">6 Core Systems</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="equip-switch-grid"></div>
+          <div id="equip-switch-readout" class="p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-xs text-slate-200"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===============================================================
+         FEEDER 03: PLC LADDER LOGIC & MICROCONTROLLER AUTOMATION LAB
+         =============================================================== -->
+    <section id="bay-automation" data-bay-title="● FDR 03: PLC & MCU AUTOMATION" class="scada-bay relative md:pl-14 lg:pl-16 lg:w-[57%] pointer-events-auto">
+      <div class="hidden md:flex absolute left-3.5 lg:left-5 top-10 w-7 h-7 rounded-lg bg-amber-400 text-slate-950 items-center justify-center font-mono-scada font-bold text-xs shadow-lg shadow-amber-500/50">
+        F3
+      </div>
+
+      <div class="scada-panel-amber rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/25 pb-4">
+          <div>
+            <span class="text-xs font-mono-scada uppercase tracking-widest text-amber-400">FEEDER BAY 03 // EMBEDDED &amp; INDUSTRIAL AUTOMATION</span>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">Academic Projects — Live PLC / MCU Rung Simulators</h2>
+          </div>
+          <span class="px-3 py-1 rounded-md text-xs font-mono-scada font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            Interactive Ladder &amp; Sensor Control
+          </span>
+        </div>
+
+        <!-- Project 1: Automatic Plant Watering System with Live Ladder Logic Rung -->
+        <div class="p-5 rounded-2xl bg-slate-950/90 border border-cyan-500/35 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-mono-scada uppercase text-cyan-400 font-bold">AUTOMATION SYSTEM 01 • CLOSED-LOOP SENSOR CONTROL</span>
+              <h3 class="text-lg font-bold text-white">Automatic Plant Watering System Based on Soil Moisture and Fertility</h3>
+            </div>
+            <span id="plc-coil-water" class="px-2.5 py-1 rounded-md text-xs font-mono-scada font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              COIL Y0 (PUMP): ENERGIZED
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Designed a sensor-based automated irrigation system that monitors soil moisture and fertility levels to optimize water usage for plant health. Integrated moisture/fertility sensors with a microcontroller to trigger watering only when required, reducing manual intervention and water wastage.
+          </p>
+
+          <!-- Visual PLC Ladder Logic Rung -->
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 font-mono-scada text-[11px] overflow-x-auto">
+            <div class="text-[10px] text-slate-400 mb-1.5">LIVE LADDER LOGIC RUNG 01 (MICROCONTROLLER SENSOR INTERLOCK):</div>
+            <div class="flex items-center gap-1.5 whitespace-nowrap">
+              <span class="text-cyan-400 font-bold">|---</span>
+              <span id="rung-contact-moist" class="px-2 py-1 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400 font-bold">[ X0: Moist &lt; 45% ]</span>
+              <span class="text-emerald-400 font-bold">---</span>
+              <span id="rung-contact-fert" class="px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400">[ X1: Fertility OK ]</span>
+              <span id="rung-wire" class="text-emerald-400 font-bold">-------</span>
+              <span id="rung-coil-pump" class="px-2.5 py-1 rounded-full bg-emerald-400 text-slate-950 font-bold">( Y0: WATER PUMP ON )</span>
+              <span class="text-cyan-400 font-bold">---|</span>
+            </div>
+          </div>
+
+          <!-- Sensor Sliders -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs font-mono-scada">
+                <span class="text-slate-300">Soil Moisture Sensor (X0)</span>
+                <span id="mcu-moist-val" class="text-cyan-300 font-bold">32% (Dry)</span>
+              </div>
+              <input id="mcu-moist-slider" type="range" min="10" max="90" value="32" class="w-full accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg" />
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs font-mono-scada">
+                <span class="text-slate-300">Soil Fertility Sensor (X1)</span>
+                <span id="mcu-fert-val" class="text-emerald-300 font-bold">75% (Optimal)</span>
+              </div>
+              <input id="mcu-fert-slider" type="range" min="20" max="100" value="75" class="w-full accent-emerald-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Project 2: Automatic Fertilizer Dispenser with Interval Timer -->
+        <div class="p-5 rounded-2xl bg-slate-950/90 border border-amber-500/35 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-mono-scada uppercase text-amber-400 font-bold">AUTOMATION SYSTEM 02 • TIMED NUTRIENT DOSING</span>
+              <h3 class="text-lg font-bold text-white">Automatic Fertilizer Dispenser for Small Farms</h3>
+            </div>
+            <span id="fert-batch-badge" class="px-2.5 py-1 rounded-md text-xs font-mono-scada font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              TIMER T1 BATCHES: 1
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Developed an automated system to dispense fertilizer at controlled intervals, reducing manual labor and improving nutrient distribution for small-scale farms. Designed for low-cost, low-maintenance operation suited to small farm budgets and resource constraints.
+          </p>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div class="flex items-center gap-2">
+              <button type="button" id="dispense-pulse-btn" class="px-4 py-2 rounded-xl text-xs font-mono-scada font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md transition-all">
+                ⚡ Execute Controlled Interval Dispense (T1)
+              </button>
+              <button type="button" id="reset-hopper-btn" class="px-3 py-2 rounded-xl text-xs font-mono-scada bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700">
+                Reload Hopper (100%)
+              </button>
+            </div>
+            <span id="hopper-status-readout" class="text-xs font-mono-scada text-emerald-400">Hopper Level: 85% | Low-Maintenance Ready</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===============================================================
+         FEEDER 04: PROTECTION & AUTOMATION SKILLS MATRIX
+         =============================================================== -->
+    <section id="bay-skills" data-bay-title="● FDR 04: PROTECTION & SCADA MATRIX" class="scada-bay relative md:pl-14 lg:pl-16 lg:w-[57%] pointer-events-auto">
+      <div class="hidden md:flex absolute left-3.5 lg:left-5 top-10 w-7 h-7 rounded-lg bg-purple-400 text-slate-950 items-center justify-center font-mono-scada font-bold text-xs shadow-lg shadow-purple-500/50">
+        F4
+      </div>
+
+      <div class="scada-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-mono-scada uppercase tracking-widest text-purple-400">FEEDER BAY 04 // TECHNICAL CAPABILITY PANEL</span>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">Technical Skills &amp; Engineering Strengths</h2>
+          </div>
+          <span class="text-xs font-mono-scada text-slate-400">Click any relay module to inspect</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5" id="scada-skills-grid"></div>
+
+        <div id="scada-skill-detail" class="p-4 rounded-2xl bg-slate-950/90 border border-cyan-500/30 text-xs text-slate-200"></div>
+
+        <!-- 3 Verbatim Strengths from Resume -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="text-[10px] font-mono-scada text-cyan-400 font-bold">RELAY 01 // FUNDAMENTALS</div>
+            <p class="text-xs text-slate-200">Strong fundamentals in power systems and protection engineering</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="text-[10px] font-mono-scada text-emerald-400 font-bold">RELAY 02 // FIELD EXPOSURE</div>
+            <p class="text-xs text-slate-200">Practical, field-tested exposure through substation internship</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
+            <div class="text-[10px] font-mono-scada text-amber-400 font-bold">RELAY 03 // SMART SYSTEMS</div>
+            <p class="text-xs text-slate-200">Quick learner with a keen interest in automation and smart systems</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===============================================================
+         FEEDER 05: DISPATCH CONSOLE — LANGUAGES, HOBBIES & DECLARATION
+         =============================================================== -->
+    <section id="bay-dispatch" data-bay-title="● FDR 05: TELEMETRY DISPATCH" class="scada-bay relative md:pl-14 lg:pl-16 lg:w-[57%] pointer-events-auto">
+      <div class="hidden md:flex absolute left-3.5 lg:left-5 top-10 w-7 h-7 rounded-lg bg-indigo-400 text-slate-950 items-center justify-center font-mono-scada font-bold text-xs shadow-lg shadow-indigo-500/50">
+        F5
+      </div>
+
+      <div class="scada-panel rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-mono-scada uppercase tracking-widest text-indigo-400">FEEDER BAY 05 // CONTROL ROOM DISPATCH &amp; SIGN-OFF</span>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">Languages, Hobbies &amp; Placement Uplink</h2>
+          </div>
+          <span class="px-3 py-1 rounded-md text-xs font-mono-scada bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Ready for Deployment
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Trilingual Dispatch -->
+          <div class="p-4 rounded-2xl bg-slate-950/85 border border-slate-800 space-y-3">
+            <div class="text-xs font-mono-scada uppercase text-cyan-400 font-semibold">Languages Known (Click to Switch Audio/Text Log)</div>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" data-disp-lang="en" class="disp-lang-btn py-1.5 px-2 rounded-lg text-xs font-mono-scada font-bold bg-cyan-400 text-slate-950">English</button>
+              <button type="button" data-disp-lang="gu" class="disp-lang-btn py-1.5 px-2 rounded-lg text-xs font-mono-scada bg-slate-900 text-slate-200 border border-slate-700">Gujarati</button>
+              <button type="button" data-disp-lang="hi" class="disp-lang-btn py-1.5 px-2 rounded-lg text-xs font-mono-scada bg-slate-900 text-slate-200 border border-slate-700">Hindi</button>
+            </div>
+            <p id="disp-lang-readout" class="text-xs font-mono-scada text-slate-300 leading-relaxed">
+              "Control Room Dispatch: Mihir Gadhvi is fluent in English, Gujarati, and Hindi for seamless field and engineering team coordination."
+            </p>
+          </div>
+
+          <!-- Hobbies & Sports -->
+          <div class="p-4 rounded-2xl bg-slate-950/85 border border-slate-800 space-y-3">
+            <div class="text-xs font-mono-scada uppercase text-amber-400 font-semibold">Hobbies &amp; Interests</div>
+            <div class="grid grid-cols-2 gap-2 text-xs font-mono-scada">
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white">🏏 Cricket</div>
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white">♟️ Chess</div>
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white">🚴 Cycling</div>
+              <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-white">⚡ Physical Sports</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Signed Declaration & Action Buttons -->
+        <div class="p-5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="text-[10px] font-mono-scada uppercase text-slate-400">Official Declaration</div>
+            <p class="text-xs text-slate-200 italic">"I hereby declare that the information provided above is true to the best of my knowledge." — <strong class="not-italic text-cyan-300">Mihir Gadhvi</strong></p>
+          </div>
+          <div class="flex flex-wrap gap-2 shrink-0">
+            <a href="mailto:mihirgadhavi77@gmail.com?subject=Placement%20Opportunity%20—%20Mihir%20Gadhvi" class="px-4 py-2.5 rounded-xl text-xs font-mono-scada font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-md">
+              Email Mihir
+            </a>
+            <a href="https://drive.google.com/file/d/1dmlzbJJtdrQXA5v3qsONiebiFmcVJsI_/view?usp=drivesdk" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2.5 rounded-xl text-xs font-mono-scada bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700">
+              Original PDF ↗
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FULL RESUME SHEET MODAL -->
+  <div id="resume-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="scada-panel rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5">
+      <div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <span class="text-xs font-mono-scada text-cyan-400 uppercase">Complete Verbatim Resume Sheet (230200109021_resume.pdf)</span>
+          <h2 class="font-display text-2xl font-bold text-white mt-0.5">MIHIR GADHVI</h2>
+          <p class="text-xs text-slate-300 mt-0.5">Rajkot, Gujarat | +91 93283 39238 | mihirgadhavi77@gmail.com | LinkedIn</p>
+        </div>
+        <button type="button" id="close-resume-modal-btn" class="p-2 rounded-xl bg-slate-900 text-slate-300 hover:text-white border border-slate-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-200 leading-relaxed">
+        <div>
+          <div class="font-mono-scada text-cyan-300 font-bold uppercase mb-1">Objective</div>
+          <p>Final-year Electrical Engineering student with hands-on substation testing experience and a strong academic record, seeking a placement opportunity to apply my knowledge of power systems, protection, and automation to real-world engineering challenges.</p>
+        </div>
+        <div>
+          <div class="font-mono-scada text-sky-300 font-bold uppercase mb-1">Education</div>
+          <p><strong>B.E. Electrical Engineering</strong> — Government Engineering College, Rajkot (GTU) | 2022 – 2026 | CGPA: 7.78 (up to Semester V) | Currently in Semester VII</p>
+        </div>
+        <div>
+          <div class="font-mono-scada text-emerald-300 font-bold uppercase mb-1">Internship Experience</div>
+          <p><strong>Industrial Trainee — Gujarat Energy Transmission Corporation Limited (GETCO)</strong> | Testing Department | 15 Days</p>
+          <ul class="list-disc pl-5 mt-1 space-y-1">
+            <li>Underwent hands-on industrial training in the Testing Department, gaining practical exposure to substation equipment testing and maintenance procedures.</li>
+            <li>Visited and studied operations at 220 kV Morbi (AIS), 220 kV Siddheshwar (GIS), and Hadala substations.</li>
+            <li>Gained working knowledge of power transformers, CTs/PTs, circuit breakers, protection relays, SCADA systems, and Gas Insulated Switchgear (GIS).</li>
+            <li>Documented findings and testing procedures in a detailed technical internship report.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="font-mono-scada text-amber-300 font-bold uppercase mb-1">Academic Projects</div>
+          <p><strong>1. Automatic Plant Watering System Based on Soil Moisture and Fertility:</strong> Designed a sensor-based automated irrigation system that monitors soil moisture and fertility levels to optimize water usage for plant health. Integrated moisture/fertility sensors with a microcontroller to trigger watering only when required, reducing manual intervention and water wastage.</p>
+          <p class="mt-1.5"><strong>2. Automatic Fertilizer Dispenser for Small Farms:</strong> Developed an automated system to dispense fertilizer at controlled intervals, reducing manual labor and improving nutrient distribution for small-scale farms. Designed for low-cost, low-maintenance operation suited to small farm budgets and resource constraints.</p>
+        </div>
+        <div>
+          <div class="font-mono-scada text-purple-300 font-bold uppercase mb-1">Technical Skills, Strengths, Languages &amp; Hobbies</div>
+          <p><strong>Core Areas:</strong> Power Systems, Switchgear &amp; Protection, High Voltage Engineering, Electrical Machines, Industrial Automation, SCADA (basic)</p>
+          <p><strong>Tools &amp; Software:</strong> MATLAB (basic), C Language (basic), MS Office, microcontroller interfacing</p>
+          <p><strong>Languages Known:</strong> English, Gujarati, Hindi | <strong>Hobbies &amp; Interests:</strong> Cricket, Chess, Cycling, and other physical activities/sports</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // GROUNDED DATA (230200109021_resume.pdf)
+    // =========================================================================
+    const TAP_DATA = [
+      { tap: 'Tap 1 (Sem I)', info: 'Foundation in Electrical Circuits & Engineering Mathematics at GEC Rajkot.' },
+      { tap: 'Tap 2 (Sem II)', info: 'C Language (basic) programming & AC/DC network analysis.' },
+      { tap: 'Tap 3 (Sem III)', info: 'Electrical Machines I, Transformers & DC Drive fundamentals.' },
+      { tap: 'Tap 4 (Sem IV)', info: 'Power Systems generation, transmission & measurement instrumentation.' },
+      { tap: 'Tap 5 (Sem V ★)', info: 'Milestone: 7.78 CGPA achieved up to Semester V; Switchgear & Protection.' },
+      { tap: 'Tap 6 (Sem VI)', info: 'High Voltage Engineering, Industrial Automation & GETCO 15-day Substation Training.' },
+      { tap: 'Tap 7 (Sem VII)', info: 'Currently in Semester VII — Final-year Power Systems & Protection specialization.' },
+      { tap: 'Tap 8 (Sem VIII)', info: 'Upcoming graduation milestone (2022 – 2026 B.E. Electrical Engineering cohort).' }
+    ];
+
+    const SUB_BAY_INFO = {
+      morbi: 'Visited and studied operations at <strong class="text-emerald-300">220 kV Morbi (AIS)</strong> substation: gained practical exposure to outdoor Air Insulated Switchgear equipment testing, power transformers, CTs/PTs, and maintenance procedures.',
+      siddheshwar: 'Visited and studied operations at <strong class="text-emerald-300">220 kV Siddheshwar (GIS)</strong> substation: observed compact Gas Insulated Switchgear (GIS) compartments, SF6 circuit breakers, protection relays, and SCADA telemetry.',
+      hadala: 'Visited and studied operations at <strong class="text-emerald-300">Hadala Substation</strong>: observed feeder protection schemes, instrument transformers, and documented findings and testing procedures in a detailed technical internship report.'
+    };
+
+    const EQUIP_SWITCHES = [
+      { id: 'tx', code: '52-TX', name: 'Power Transformers', desc: 'Working knowledge of 220 kV power transformer testing, maintenance procedures, bushing checks, and core/winding diagnostics at GETCO.' },
+      { id: 'ctpt', code: '52-IT', name: 'CTs / PTs', desc: 'Studied Current Transformers (CTs) and Potential Transformers (PTs) for high-voltage metering and protective relay signal scaling.' },
+      { id: 'cb', code: '52-CB', name: 'Circuit Breakers', desc: 'Observed high-voltage circuit breaker operations, fault interruption, and trip-coil testing across 220 kV AIS and GIS bays.' },
+      { id: 'relay', code: '86-PR', name: 'Protection Relays', desc: 'Studied overcurrent, earth-fault, and differential protection relays that isolate faulty substation feeders within milliseconds.' },
+      { id: 'scada', code: 'RTU-01', name: 'SCADA Systems', desc: 'Gained exposure to Supervisory Control and Data Acquisition (SCADA) systems for real-time telemetry and remote breaker control.' },
+      { id: 'gis', code: 'GIS-SF6', name: 'Gas Insulated Switchgear', desc: 'Studied compact Gas Insulated Switchgear (GIS) operations at 220 kV Siddheshwar substation alongside conventional AIS at Morbi.' }
+    ];
+
+    const SCADA_SKILLS = [
+      { name: 'Power Systems', cat: 'Core Area', desc: 'Core strength in generation, 220 kV transmission substations, and load flow behavior.' },
+      { name: 'Switchgear & Protection', cat: 'Core Area', desc: 'Field-tested understanding of circuit breakers, CTs/PTs, protection relays, and AIS/GIS switchgear.' },
+      { name: 'High Voltage Engineering', cat: 'Core Area', desc: 'Hands-on exposure to 220 kV substation testing and insulation practices at GETCO.' },
+      { name: 'Electrical Machines', cat: 'Core Area', desc: 'Strong foundation in power transformers and motorized farm automation machinery.' },
+      { name: 'Industrial Automation', cat: 'Core Area', desc: 'Applied to sensor-based automated plant irrigation and timed fertilizer dispensing systems.' },
+      { name: 'SCADA (basic)', cat: 'Core Area', desc: 'Studied substation SCADA telemetry and supervisory control rooms during GETCO training.' },
+      { name: 'MATLAB (basic)', cat: 'Tools & Software', desc: 'Used for electrical system simulation, numerical analysis, and plotting.' },
+      { name: 'C Language (basic)', cat: 'Tools & Software', desc: 'Used to write embedded microcontroller control logic for sensor-triggered automation.' },
+      { name: 'Microcontroller Interfacing', cat: 'Tools & Software', desc: 'Interfaced moisture sensors, fertility sensors, pumps, and dispensers with microcontrollers.' },
+      { name: 'MS Office', cat: 'Tools & Software', desc: 'Prepared the detailed technical internship report documenting GETCO testing procedures.' }
+    ];
+
+    const DISPATCH_LANGS = {
+      en: '"Control Room Dispatch [EN]: Mihir Gadhvi is fluent in English, ready for technical documentation, SCADA operations, and engineering team collaboration."',
+      gu: '"કંટ્રોલ રૂમ ડિસ્પેચ [GU]: મિહિર ગઢવી ગુજરાતી, હિન્દી અને અંગ્રેજીમાં નિપુણ છે — ગુજરાતના 220 kV સબસ્ટેશન અને ઓટોમેશન પ્રોજેક્ટ્સ માટે તૈયાર."',
+      hi: '"कंट्रोल रूम डिस्पैच [HI]: मिहिर गढ़वी हिंदी, गुजराती और अंग्रेजी में धाराप्रवाह संवाद करते हैं — पावर सिस्टम्स और सबस्टेशन टीमों के साथ समन्वय के लिए तत्पर।"'
+    };
+
+    // =========================================================================
+    // APPLICATION STATE
+    // =========================================================================
+    const state = {
+      kv: 220,
+      hz: 50.0,
+      activeTap: 6,
+      activeEquip: 'tx',
+      activeSkill: 0,
+      moisture: 32,
+      fertility: 75,
+      hopperPct: 85,
+      fertBatches: 1,
+      faultActive: false,
+      faultTimer: 0
+    };
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      const el = document.createElement('div');
+      el.className = 'scada-panel px-4 py-2.5 rounded-xl text-xs font-mono-scada text-cyan-200 flex items-center gap-2 shadow-2xl border border-cyan-400/50 transition-all duration-300';
+      el.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span><span>${msg}</span>`;
+      box.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 2400);
+    }
+
+    // =========================================================================
+    // RENDER INTERACTIVE PANELS
+    // =========================================================================
+    function renderOltcTaps() {
+      const grid = document.getElementById('oltc-tap-grid');
+      grid.innerHTML = TAP_DATA.map((t, i) => {
+        const active = i === state.activeTap;
+        return `
+          <button type="button" data-tap="${i}" class="tap-btn py-2 px-1 rounded-lg font-mono-scada text-[11px] transition-all ${
+            active
+              ? 'bg-sky-400 text-slate-950 font-bold shadow-md shadow-sky-500/30'
+              : i === 4
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-sky-400'
+          }">Sem ${i + 1}</button>
+        `;
+      }).join('');
+
+      const cur = TAP_DATA[state.activeTap];
+      document.getElementById('oltc-tap-readout').innerHTML = `
+        <span class="font-mono-scada font-bold text-sky-300">${cur.tap}:</span>
+        <span class="text-slate-200 ml-1">${cur.info}</span>
+      `;
+
+      grid.querySelectorAll('.tap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeTap = Number(btn.getAttribute('data-tap'));
+          renderOltcTaps();
+        });
+      });
+    }
+
+    function renderEquipSwitches() {
+      const grid = document.getElementById('equip-switch-grid');
+      grid.innerHTML = EQUIP_SWITCHES.map(eq => {
+        const active = eq.id === state.activeEquip;
+        return `
+          <button type="button" data-eq="${eq.id}" class="eq-sw-btn p-3 rounded-xl text-left font-mono-scada transition-all ${
+            active
+              ? 'bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/25'
+              : 'bg-slate-950/90 hover:bg-slate-900 text-slate-200 border border-slate-800'
+          }">
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="${active ? 'text-slate-900' : 'text-emerald-400'}">${eq.code}</span>
+              <span>● CLOSED</span>
+            </div>
+            <div class="text-xs font-bold mt-1">${eq.name}</div>
+          </button>
+        `;
+      }).join('');
+
+      const cur = EQUIP_SWITCHES.find(e => e.id === state.activeEquip) || EQUIP_SWITCHES[0];
+      document.getElementById('equip-switch-readout').innerHTML = `
+        <div class="font-mono-scada text-emerald-400 font-bold uppercase mb-1">⚡ [${cur.code}] ${cur.name} — GETCO Field Log</div>
+        <p class="text-slate-200 leading-relaxed">${cur.desc}</p>
+      `;
+
+      grid.querySelectorAll('.eq-sw-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeEquip = btn.getAttribute('data-eq');
+          renderEquipSwitches();
+        });
+      });
+    }
+
+    function renderScadaSkills() {
+      const grid = document.getElementById('scada-skills-grid');
+      grid.innerHTML = SCADA_SKILLS.map((s, idx) => {
+        const active = idx === state.activeSkill;
+        return `
+          <button type="button" data-sk="${idx}" class="sk-mod-btn p-3 rounded-xl text-left font-mono-scada transition-all ${
+            active
+              ? 'bg-gradient-to-br from-cyan-400 to-emerald-400 text-slate-950 font-bold shadow-md'
+              : 'bg-slate-950/90 hover:bg-slate-900 text-slate-200 border border-slate-800'
+          }">
+            <div class="text-[9px] uppercase ${active ? 'text-slate-900' : 'text-cyan-400'}">${s.cat}</div>
+            <div class="text-xs font-bold mt-1 leading-snug">${s.name}</div>
+          </button>
+        `;
+      }).join('');
+
+      const cur = SCADA_SKILLS[state.activeSkill];
+      document.getElementById('scada-skill-detail').innerHTML = `
+        <span class="font-mono-scada font-bold text-cyan-300 uppercase">[${cur.cat}] ${cur.name}:</span>
+        <span class="text-slate-200 ml-1">${cur.desc}</span>
+      `;
+
+      grid.querySelectorAll('.sk-mod-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeSkill = Number(btn.getAttribute('data-sk'));
+          renderScadaSkills();
+        });
+      });
+    }
+
+    // =========================================================================
+    // 220 kV POWER GRID & SCADA DIGITAL-TWIN CANVAS ENGINE
+    // =========================================================================
+    function initPowerGridCanvas() {
+      const canvas = document.getElementById('power-grid-canvas');
+      const ctx = canvas.getContext('2d');
+
+      const FEEDER_NODES = [
+        { id: 'f1', label: 'FDR 01: GTU Education (7.78)', angle: -2.2, dist: 155, color: '#38bdf8', target: '#bay-edu', kv: '132 kV' },
+        { id: 'f2', label: 'FDR 02: GETCO 220kV Sub.', angle: -0.9, dist: 185, color: '#10b981', target: '#bay-getco', kv: '220 kV', subs: ['Morbi AIS', 'Siddheshwar GIS', 'Hadala'] },
+        { id: 'f3', label: 'FDR 03: Plant Watering MCU', angle: 0.25, dist: 170, color: '#06b6d4', target: '#bay-automation', kv: '24V DC' },
+        { id: 'f4', label: 'FDR 04: Fertilizer PLC Timer', angle: 1.15, dist: 180, color: '#f59e0b', target: '#bay-automation', kv: '24V DC' },
+        { id: 'f5', label: 'FDR 05: Protection & SCADA', angle: 2.15, dist: 165, color: '#a855f7', target: '#bay-skills', kv: '220 kV' },
+        { id: 'f6', label: 'FDR 06: Dispatch & Comms', angle: 3.05, dist: 150, color: '#6366f1', target: '#bay-dispatch', kv: 'Telemetry' }
+      ];
+
+      const hitNodes = [];
+      let phaseOffset = 0;
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function drawGridFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const scrollY = window.scrollY || 0;
+        const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+        const scrollRatio = Math.min(1, Math.max(0, scrollY / maxScroll));
+
+        const lfBar = document.getElementById('load-flow-bar');
+        if (lfBar) lfBar.style.width = `${(scrollRatio * 100).toFixed(1)}%`;
+
+        // Transition center from Top Open Stage (at scroll=0) to Right Viewport Dock (during scroll)
+        const stageT = Math.min(1, scrollY / 420);
+        const isDesktop = canvas.width >= 1024;
+        const rightDockX = canvas.width * 0.785;
+        const cx = isDesktop
+          ? (canvas.width * 0.5) * (1 - stageT) + rightDockX * stageT
+          : canvas.width * 0.5;
+        const topStageY = Math.min(285, canvas.height * 0.43);
+        const scrollStageY = isDesktop ? canvas.height * 0.50 : canvas.height * 0.25;
+        const cy = topStageY * (1 - stageT) + scrollStageY * stageT;
+        const scale = isDesktop
+          ? (1.02 * (1 - stageT) + 0.78 * stageT) * Math.min(1.15, canvas.width / 1280)
+          : Math.min(0.75, Math.max(0.48, canvas.width / 660));
+
+        // 1. Subtle SCADA Blueprint Grid Background
+        ctx.save();
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.05)';
+        ctx.lineWidth = 1;
+        const step = 44;
+        for (let x = 0; x < canvas.width; x += step) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += step) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2. Live 3-Phase R-Y-B Sinusoidal Oscilloscope Waveform Ribbon below the Hub
+        phaseOffset += (state.hz / 50) * 0.08;
+        const waveY = cy + 215 * scale;
+        const waveW = 340 * scale;
+        const waveX0 = cx - waveW / 2;
+        const amp = (state.kv / 220) * 16 * scale;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.85)';
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(waveX0 - 12, waveY - 28 * scale, waveW + 24, 56 * scale, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        const phases = [
+          { color: '#ef4444', shift: 0 },
+          { color: '#eab308', shift: (2 * Math.PI) / 3 },
+          { color: '#3b82f6', shift: (4 * Math.PI) / 3 }
+        ];
+        for (const ph of phases) {
+          ctx.beginPath();
+          ctx.strokeStyle = ph.color;
+          ctx.lineWidth = 1.6;
+          for (let i = 0; i <= waveW; i += 4) {
+            const rad = (i / waveW) * Math.PI * 4 - phaseOffset + ph.shift;
+            const yVal = waveY + Math.sin(rad) * amp;
+            if (i === 0) ctx.moveTo(waveX0 + i, yVal);
+            else ctx.lineTo(waveX0 + i, yVal);
+          }
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = `600 ${Math.max(8, Math.round(9.5 * scale))}px "JetBrains Mono", monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`3Φ R-Y-B LIVE OSCILLOSCOPE (${state.kv} kV • ${state.hz.toFixed(1)} Hz)`, cx, waveY - 16 * scale);
+        ctx.restore();
+
+        // 3. Draw Concentric Substation Bus Rings
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 85 * scale, 0, Math.PI * 2);
+        ctx.strokeStyle = state.faultActive ? 'rgba(244, 63, 94, 0.65)' : 'rgba(6, 182, 212, 0.28)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 170 * scale, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.22)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Draw Radial Feeder Transmission Lines & Moving Current Packets
+        const now = Date.now();
+        hitNodes.length = 0;
+
+        for (const fn of FEEDER_NODES) {
+          const r = fn.dist * scale;
+          const nx = cx + Math.cos(fn.angle) * r;
+          const ny = cy + Math.sin(fn.angle) * r * 0.82;
+
+          // Transmission Line with orthogonal SCADA elbow bend
+          const midX = cx + Math.cos(fn.angle) * (r * 0.55);
+          const midY = cy + Math.sin(fn.angle) * (r * 0.55) * 0.82;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(midX, midY);
+          ctx.lineTo(nx, ny);
+          ctx.strokeStyle = state.faultActive ? '#f43f5e' : fn.color;
+          ctx.globalAlpha = 0.45;
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+          ctx.restore();
+
+          // Animated Current Electron Packets traveling along feeder
+          const packetT = ((now * 0.0008 * (state.hz / 50)) % 1);
+          const px = cx + (nx - cx) * packetT;
+          const py = cy + (ny - cy) * packetT;
+          ctx.save();
+          ctx.fillStyle = state.faultActive ? '#f43f5e' : '#fef08a';
+          ctx.shadowColor = fn.color;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(px, py, 3.5 * scale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          // Draw Sub-Satellites for GETCO 3 Substations
+          if (fn.subs) {
+            fn.subs.forEach((subName, sIdx) => {
+              const sa = now * 0.0018 + (sIdx * Math.PI * 2) / 3;
+              const sr = 32 * scale;
+              const sx = nx + Math.cos(sa) * sr;
+              const sy = ny + Math.sin(sa) * sr * 0.75;
+              ctx.save();
+              ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+              ctx.beginPath();
+              ctx.moveTo(nx, ny);
+              ctx.lineTo(sx, sy);
+              ctx.stroke();
+              ctx.fillStyle = '#10b981';
+              ctx.beginPath();
+              ctx.arc(sx, sy, 4 * scale, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+            });
+          }
+
+          // Feeder Breaker Node Box
+          const boxR = Math.max(11, 14 * scale);
+          hitNodes.push({ x: nx, y: ny, r: boxR + 12, target: fn.target, name: fn.label });
+
+          ctx.save();
+          ctx.fillStyle = '#040d1a';
+          ctx.strokeStyle = state.faultActive ? '#f43f5e' : fn.color;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.roundRect(nx - boxR, ny - boxR, boxR * 2, boxR * 2, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = fn.color;
+          ctx.font = `700 ${Math.max(8, Math.round(9 * scale))}px "JetBrains Mono", monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(fn.id.toUpperCase(), nx, ny + 3);
+
+          // High-Contrast Pill Label
+          ctx.font = `700 ${Math.max(8.5, Math.round(9.5 * scale))}px "JetBrains Mono", monospace`;
+          const tw = ctx.measureText(fn.label).width;
+          const ly = ny + boxR + 13;
+          ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
+          ctx.strokeStyle = fn.color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(nx - tw / 2 - 6, ly - 9, tw + 12, 14, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(fn.label, nx, ly + 1.5);
+          ctx.restore();
+        }
+
+        // 5. Draw Central 220 kV Master Busbar Hub ("MIHIR GADHVI")
+        const hubR = Math.max(30, 42 * scale);
+        hitNodes.push({ x: cx, y: cy, r: hubR + 8, target: '#bay-bus0', name: 'BUS 00: MIHIR GADHVI Master Hub' });
+
+        ctx.save();
+        const hubGlow = ctx.createRadialGradient(cx, cy, hubR * 0.2, cx, cy, hubR * 2.4);
+        hubGlow.addColorStop(0, state.faultActive ? 'rgba(244, 63, 94, 0.85)' : 'rgba(6, 182, 212, 0.75)');
+        hubGlow.addColorStop(0.5, state.faultActive ? 'rgba(244, 63, 94, 0.25)' : 'rgba(16, 185, 129, 0.25)');
+        hubGlow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+        ctx.fillStyle = hubGlow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, hubR * 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Octagonal / Circular Substation Core
+        ctx.fillStyle = '#040d1a';
+        ctx.strokeStyle = state.faultActive ? '#f43f5e' : '#22d3ee';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, hubR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = `700 ${Math.max(8, Math.round(8.5 * scale))}px "JetBrains Mono", monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${state.kv} kV BUS`, cx, cy - 11);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${Math.max(9.5, Math.round(11 * scale))}px "Space Grotesk", sans-serif`;
+        ctx.fillText('MIHIR', cx, cy + 2);
+        ctx.fillText('GADHVI', cx, cy + 14);
+        ctx.restore();
+
+        requestAnimationFrame(drawGridFrame);
+      }
+
+      requestAnimationFrame(drawGridFrame);
+
+      canvas.addEventListener('click', (e) => {
+        for (const item of hitNodes) {
+          if (Math.hypot(e.clientX - item.x, e.clientY - item.y) <= item.r) {
+            document.body.classList.remove('full-grid-mode');
+            document.getElementById('full-grid-label').textContent = 'Full Grid View';
+            const targetEl = document.querySelector(item.target);
+            if (targetEl) {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              showToast(`SCADA Lock: ${item.name}`);
+            }
+            break;
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // INITIALIZE CONTROLS & LISTENERS
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      renderOltcTaps();
+      renderEquipSwitches();
+      renderScadaSkills();
+      initPowerGridCanvas();
+
+      if (window.lucide) lucide.createIcons();
+
+      // Copy Terminals
+      document.querySelectorAll('.copy-term').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.getAttribute('data-copy');
+          const lbl = btn.getAttribute('data-label');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(val).then(() => showToast(`Copied ${lbl}: ${val}`));
+          } else {
+            showToast(`${lbl}: ${val}`);
+          }
+        });
+      });
+
+      // Busbar Voltage & Frequency Sliders
+      function updateBusTelemetry() {
+        state.kv = Number(document.getElementById('kv-slider').value);
+        state.hz = Number(document.getElementById('hz-slider').value);
+        document.getElementById('kv-slider-val').textContent = `${state.kv} kV`;
+        document.getElementById('hz-slider-val').textContent = `${state.hz.toFixed(1)} Hz`;
+        document.getElementById('bus-voltage-badge').textContent = `${state.kv}.0 kV | ${state.hz.toFixed(1)} Hz`;
+        document.getElementById('stage-kv-readout').textContent =
+          `V_bus: ${state.kv}.0 kV | f: ${state.hz.toFixed(2)} Hz | PF: 0.98 Lag`;
+      }
+      document.getElementById('kv-slider').addEventListener('input', updateBusTelemetry);
+      document.getElementById('hz-slider').addEventListener('input', updateBusTelemetry);
+
+      // Full Grid View Toggle
+      document.getElementById('full-grid-btn').addEventListener('click', () => {
+        document.body.classList.toggle('full-grid-mode');
+        const active = document.body.classList.contains('full-grid-mode');
+        document.getElementById('full-grid-label').textContent = active ? 'Show Bays' : 'Full Grid View';
+        showToast(active ? 'Full-Screen 220 kV Power Grid Mode (Click any feeder node or Show Bays)' : 'Restored SCADA Control Bays');
+      });
+
+      // Simulated 3-Phase Fault & Relay Trip Sequence
+      document.getElementById('fault-test-btn').addEventListener('click', () => {
+        if (state.faultActive) return;
+        state.faultActive = true;
+        const badge = document.getElementById('scada-active-bay');
+        badge.className = 'px-2.5 py-0.5 rounded-md text-[10px] font-mono-scada font-bold bg-rose-500/30 text-rose-200 border border-rose-400 animate-pulse';
+        badge.textContent = '⚠ 3Φ FAULT DETECTED • RELAY 86 TRIP!';
+        showToast('⚠ Simulated 220 kV Fault Injected → Protection Relay Tripping...');
+
+        setTimeout(() => {
+          state.faultActive = false;
+          badge.className = 'px-2.5 py-0.5 rounded-md text-[10px] font-mono-scada font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+          badge.textContent = '● FAULT CLEARED • AUTO-RECLOSED (50.00 Hz)';
+          showToast('✓ Circuit Breaker Cleared Fault & Auto-Reclosed Successfully!');
+        }, 2600);
+      });
+
+      // GETCO 3 Substation Bay Switcher
+      document.querySelectorAll('.sub-bay-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-sub-bay');
+          document.getElementById('substation-bay-summary').innerHTML = SUB_BAY_INFO[key];
+          document.querySelectorAll('.sub-bay-btn').forEach(b => {
+            const act = b.getAttribute('data-sub-bay') === key;
+            b.className = act
+              ? 'sub-bay-btn p-3 rounded-xl text-left font-mono-scada transition-all bg-emerald-400 text-slate-950 font-bold shadow-md'
+              : 'sub-bay-btn p-3 rounded-xl text-left font-mono-scada transition-all bg-slate-900 text-slate-200 border border-slate-700 hover:border-emerald-400';
+          });
+        });
+      });
+
+      // PLC Ladder Logic Rung Simulator (Automatic Plant Watering)
+      function updatePlcRung() {
+        const m = Number(document.getElementById('mcu-moist-slider').value);
+        const f = Number(document.getElementById('mcu-fert-slider').value);
+        const moistContactClosed = m < 45;
+        const fertContactClosed = f >= 35;
+        const pumpEnergized = moistContactClosed && fertContactClosed;
+
+        document.getElementById('mcu-moist-val').textContent = moistContactClosed ? `${m}% (Dry < 45%)` : `${m}% (Wet >= 45%)`;
+        document.getElementById('mcu-fert-val').textContent = `${f}% (${fertContactClosed ? 'Optimal' : 'Low'})`;
+
+        const cMoist = document.getElementById('rung-contact-moist');
+        const cFert = document.getElementById('rung-contact-fert');
+        const cPump = document.getElementById('rung-coil-pump');
+        const badge = document.getElementById('plc-coil-water');
+
+        cMoist.className = moistContactClosed
+          ? 'px-2 py-1 rounded bg-emerald-500/25 text-emerald-300 border border-emerald-400 font-bold'
+          : 'px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700';
+        cFert.className = fertContactClosed
+          ? 'px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400 font-bold'
+          : 'px-2 py-1 rounded bg-rose-500/20 text-rose-300 border border-rose-400';
+
+        if (pumpEnergized) {
+          cPump.className = 'px-2.5 py-1 rounded-full bg-emerald-400 text-slate-950 font-bold';
+          cPump.textContent = '( Y0: WATER PUMP ON )';
+          badge.className = 'px-2.5 py-1 rounded-md text-xs font-mono-scada font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+          badge.textContent = 'COIL Y0 (PUMP): ENERGIZED';
+        } else {
+          cPump.className = 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+          cPump.textContent = '( Y0: PUMP STANDBY )';
+          badge.className = 'px-2.5 py-1 rounded-md text-xs font-mono-scada font-bold bg-slate-800 text-slate-400 border border-slate-700';
+          badge.textContent = 'COIL Y0 (PUMP): DE-ENERGIZED';
+        }
+      }
+      document.getElementById('mcu-moist-slider').addEventListener('input', updatePlcRung);
+      document.getElementById('mcu-fert-slider').addEventListener('input', updatePlcRung);
+
+      // Fertilizer Dispenser Interval Timer
+      document.getElementById('dispense-pulse-btn').addEventListener('click', () => {
+        if (state.hopperPct <= 10) {
+          showToast('Hopper Empty! Click Reload Hopper.');
+          return;
+        }
+        state.hopperPct = Math.max(0, state.hopperPct - 15);
+        state.fertBatches += 1;
+        document.getElementById('fert-batch-badge').textContent = `TIMER T1 BATCHES: ${state.fertBatches}`;
+        document.getElementById('hopper-status-readout').textContent =
+          `Hopper Level: ${state.hopperPct}% | Dispensed Batch #${state.fertBatches}`;
+        showToast(`Executed Timed Fertilizer Dispense Batch #${state.fertBatches}`);
+      });
+
+      document.getElementById('reset-hopper-btn').addEventListener('click', () => {
+        state.hopperPct = 100;
+        document.getElementById('hopper-status-readout').textContent = 'Hopper Level: 100% | Reloaded';
+        showToast('Hopper Reloaded to 100%');
+      });
+
+      // Dispatch Languages
+      document.querySelectorAll('.disp-lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const l = btn.getAttribute('data-disp-lang');
+          document.getElementById('disp-lang-readout').textContent = DISPATCH_LANGS[l];
+          document.querySelectorAll('.disp-lang-btn').forEach(b => {
+            const act = b.getAttribute('data-disp-lang') === l;
+            b.className = act
+              ? 'disp-lang-btn py-1.5 px-2 rounded-lg text-xs font-mono-scada font-bold bg-cyan-400 text-slate-950'
+              : 'disp-lang-btn py-1.5 px-2 rounded-lg text-xs font-mono-scada bg-slate-900 text-slate-200 border border-slate-700';
+          });
+        });
+      });
+
+      // Scroll Spy
+      const bays = document.querySelectorAll('.scada-bay');
+      const navs = document.querySelectorAll('.feeder-nav-link');
+      window.addEventListener('scroll', () => {
+        let activeIdx = 0;
+        let bayTitle = '● GRID ONLINE • 50.00 Hz';
+        bays.forEach((b, idx) => {
+          const rect = b.getBoundingClientRect();
+          if (rect.top <= window.innerHeight * 0.45) {
+            activeIdx = idx;
+            bayTitle = b.getAttribute('data-bay-title') || bayTitle;
+          }
+        });
+        if (!state.faultActive) {
+          document.getElementById('scada-active-bay').textContent = bayTitle;
+        }
+        navs.forEach((n, i) => {
+          n.className = i === activeIdx
+            ? 'feeder-nav-link px-2.5 py-1.5 rounded-lg bg-cyan-400 text-slate-950 font-bold transition-all'
+            : 'feeder-nav-link px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all';
+        });
+      });
+
+      // Resume Sheet Modal
+      const modal = document.getElementById('resume-modal');
+      document.getElementById('open-resume-modal-btn').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      });
+      document.getElementById('close-resume-modal-btn').addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
